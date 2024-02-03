@@ -5,29 +5,26 @@
 # Readme for the Second Task "Unix utilites"
 ### note : you have to add their pathes to the env path variable to run from all dir as shell cmd
 ## Sample of the Output of FemtoShell
-'code' 
 
-$ ./myfemtoshell.exe
-'code'
-abokhalil@abokhalil-linux:~/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell$ ./myfemtoshell
+'code' $ ./myfemtoshell.exe
+'code' abokhalil@abokhalil-linux:~/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell$ ./myfemtoshell
 ###start
-abokhalil@stm-linux:$ echo Here's current pwd 
-Here's current pwd 
-abokhalil@stm-linux:$ pwd
-/home/abokhalil/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell
-abokhalil@stm-linux:$ cd ..
-abokhalil@stm-linux:$ echo directory changed 
-directory changed 
-abokhalil@stm-linux:$ pwd
-/home/abokhalil/Desktop/Repos/STM_Tasks/Unix_Utilities
-abokhalil@stm-linux:$ cd ./Extended_Shell
-abokhalil@stm-linux:$ pwd
-/home/abokhalil/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell
-abokhalil@stm-linux:$ aycmd 
-aycmd: command not found
-abokhalil@stm-linux:$ exit
-abokhalil@abokhalil-linux:~/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell$ 
-'code'
+'code'abokhalil@stm-linux:$ echo Here's current pwd 
+'code' Here's current pwd 
+'code' abokhalil@stm-linux:$ pwd
+'code'/home/abokhalil/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell
+'code'abokhalil@stm-linux:$ cd ..
+'code'abokhalil@stm-linux:$ echo directory changed 
+'code'directory changed 
+'code'abokhalil@stm-linux:$ pwd
+'code'/home/abokhalil/Desktop/Repos/STM_Tasks/Unix_Utilities
+'code'abokhalil@stm-linux:$ cd ./Extended_Shell
+'code' abokhalil@stm-linux:$ pwd
+'code' /home/abokhalil/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell
+'code' abokhalil@stm-linux:$ aycmd 
+'code' aycmd: command not found
+'code' abokhalil@stm-linux:$ exit
+'code' abokhalil@abokhalil-linux:~/Desktop/Repos/STM_Tasks/Unix_Utilities/Extended_Shell$ 
 #end
 
 ## Sample of  the output of external utilities 

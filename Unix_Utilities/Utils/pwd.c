@@ -15,6 +15,8 @@ main (void)
   buf = getcwd (buf, buf_size);	// it allocates memory with buf_size 
   while (((char *) NULL == buf) && (errno == ERANGE))	// if there is a range error happened and  NULL returned  
     {
+      free (buf);
+      buf = NULL;
       buf_size += 10;
       buf = getcwd (buf, buf_size);	// allocate more memory ;
 

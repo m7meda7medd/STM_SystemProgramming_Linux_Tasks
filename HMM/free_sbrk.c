@@ -51,7 +51,8 @@ main(int argc, char *argv[])
 {
     char *ptr[MAX_ALLOCS];
     int freeStep, freeMin, freeMax, blockSize, numAllocs, j;
-    printf("etext = %p, edata=%p, end=%p, initial program break=%p\n", &etext, &edata, &end, (char*)sbrk(0));
+    void* init_pb = sbrk(0) ;
+    printf("etext = %p, edata=%p, end=%p, initial program break=%p\n", &etext, &edata, &end, (char*)init_pb);
 
     if (argc < 3 || strcmp(argv[1], "--help") == 0) {
         printf("%s num-allocs block-size [step [min [max]]]\n", argv[0]);
@@ -74,7 +75,6 @@ main(int argc, char *argv[])
         printf("free-max > num-allocs\n");
         exit(1);
     }
-
     printf("Initial program break:          %10p\n", sbrk(0));
 
     printf("Allocating %d*%d bytes\n", numAllocs, blockSize);
@@ -85,15 +85,16 @@ main(int argc, char *argv[])
             exit(1);
         }
     }
-
+    void* pb1 = sbrk(0)  ;
     printf("Program break is now:           %10p\n", sbrk(0));
 
     printf("Freeing blocks from %d to %d in steps of %d\n",
                 freeMin, freeMax, freeStep);
     for (j = freeMin - 1; j < freeMax; j += freeStep)
         free(ptr[j]);
-
+    void* pb2 = sbrk(0) ; 
     printf("After free(), program break is: %10p\n", sbrk(0));
+    printf(" program break decreased by: %ld\n", ((char*)pb1-(char*)pb2));
     while(1);
 
     exit(EXIT_SUCCESS);

@@ -1,10 +1,12 @@
 
 #include "hmm.h"
 // my free list 
-node_t *head = NULL;
+static node_t *head = NULL;
 // traverse free list function
+
 int init_freelist(void)
-{
+{	
+	
     if (NULL == head) {
 	head = (node_t *) sbrk(SBRK_INCREMENT);
 	if (head == (void *) -1) {
@@ -66,7 +68,7 @@ void *split(node_t * node, size_t needed_size)
 }
 
 void *traverse_freelist(node_t * node, size_t needed_size)
-{
+{	while (node != NULL){
     if (needed_size == node->block_size) {
 	if (node->prev == NULL) {
 
@@ -108,16 +110,22 @@ void *traverse_freelist(node_t * node, size_t needed_size)
 			//merge them 
 			node->block_size +=
 			    temp_node->block_size + sizeof(size_t);
-			return traverse_freelist(node, needed_size);	//traverse the freelist 
+			//return traverse_freelist(node, needed_size);	//traverse the freelist
+			//node= node->next ;
+			continue ; 
 		    } else {
 			node->next = temp_node;	// add the new_node to the free list
 			temp_node->prev = node;
 			temp_node->next = NULL;
-			return traverse_freelist(node->next, needed_size);	//traverse the freelist 
+			//return traverse_freelist(node->next, needed_size);	//traverse the freelist
+			node = node->next ;
+			continue ; 
 		    }
 		}
 	    } else {
-		return traverse_freelist(node->next, needed_size);
+			//return traverse_freelist(node->next, needed_size);	//traverse the freelist
+		node = node->next ;
+		continue ; 
 	    }
 
 	}
@@ -136,29 +144,35 @@ void *traverse_freelist(node_t * node, size_t needed_size)
 		    //merge them 
 		    node->block_size +=
 			temp_node->block_size + sizeof(size_t);
-		    return traverse_freelist(node, needed_size);	//traverse the freelist 
+		  // return traverse_freelist(node, needed_size);	//traverse the freelist 
+		  continue ;
 		} else {
 		    node->next = temp_node;	// add the new_node to the free list
 		    temp_node->prev = node;
 		    temp_node->next = NULL;
-		    return traverse_freelist(node->next, needed_size);	//traverse the freelist 
+		    //return traverse_freelist(node->next, needed_size);	//traverse the freelist
+			node = node->next ; 
+			continue ;
 		}
 
 
 	    }
 	} else {
-	    return traverse_freelist(node->next, needed_size);
+	   // return traverse_freelist(node->next, needed_size);
+	   node = node->next ;
+	   continue ;
 	}
     }
+}
 }
 
 
 
-void *HMM_malloc(size_t size)
-{
+void *malloc(size_t size)
+{   
     if (size < MIN_ALLOCATE) {
 	size = MIN_ALLOCATE;
-    }
+	}
     node_t *node_ptr = NULL;
     if (size == 0) {
 	return NULL;
@@ -174,7 +188,7 @@ void *HMM_malloc(size_t size)
     } else {
 	// there's a free list 
 	node_ptr = traverse_freelist(head, size);
-    }
+	}
     return (void *) ((unsigned char *) node_ptr + (sizeof(size_t)));
 }
 
@@ -209,14 +223,19 @@ void check_on_tail_size(node_t * tail)
     if (tail->block_size >= (SBRK_DECREMENT - sizeof(size_t))) {
 	if (shifted_tail == current_pb) {
 	    if (tail->prev != NULL) {
+
 		tail->prev->next = NULL;
-	    } else {
-		head = NULL;
-	    }
+
+	    }else {
+		
+		head = NULL ;
+	    
+		}
 
 	    void *ret_ptr = sbrk(-(tail->block_size + (sizeof(size_t))));
 	    if (ret_ptr == (void *) -1) {
 		return;
+		
 	    }
 	}
     }
@@ -250,8 +269,8 @@ void put_node_at_tail(node_t * node, node_t * tail)
     node->prev = tail->prev;
 }
 
-void HMM_free(void *ptr)
-{
+void free(void *ptr)
+{	
     char ret = 0;
     if (ptr == NULL) {
 	return;
@@ -319,53 +338,29 @@ void HMM_free(void *ptr)
     }
 }
 
-void *HMM_calloc(size_t nmemb, size_t size)
-{
+void *calloc(size_t nmemb, size_t size)
+{	
     size_t total_size = (size * nmemb);
-    void *ptr = HMM_malloc(total_size);	// allocate
+    void *ptr = malloc(total_size);	// allocate
     memset(ptr, 0, total_size);
     return ptr;
+	
 }
 
-void *HMM_realloc(void *old_ptr, size_t new_size)
+void *realloc(void *old_ptr, size_t new_size)
 {
     void *new_ptr = NULL;
     size_t old_size =
 	*(size_t *) ((unsigned char *) old_ptr - sizeof(size_t));
-    new_ptr = HMM_malloc(new_size);	// allocate the new_size
+	//check if there is a neighbour free list with needed size 
+	// if so increase the size 
+	// else 
+	// make the normal realloc 
+    new_ptr = malloc(new_size);	// allocate the new_size
 
     memcpy(new_ptr, old_ptr, old_size);
 
-    HMM_free(old_ptr);
+    free(old_ptr);
     return new_ptr;
 }
 
-
-
-int main()
-{
-    void *current_pb = sbrk(0);	// 0x555555559000
-    void *ptr1 = HMM_malloc(56);
-    void *ptr2 = HMM_malloc(100);
-    void *ptr3 = HMM_malloc(27);
-    void *ptr4 = HMM_malloc(600);
-    void *ptr5 = HMM_malloc(97);
-    void *ptr6 = HMM_malloc(72000);
-
-    current_pb = sbrk(0);	// 0x555555562000
-    HMM_free(ptr6);
-    HMM_free(ptr2);
-    HMM_free(ptr5);
-    HMM_free(ptr1);
-    HMM_free(ptr3);
-    HMM_free(ptr4);
-    void *pb2 = sbrk(0);
-    printf("difference = %ld\n",
-	   ((unsigned char *) current_pb - (unsigned char *) pb2));
-}
-
-/*
- pb 
- 0x555555559000
- 0x5555555d7000
- */

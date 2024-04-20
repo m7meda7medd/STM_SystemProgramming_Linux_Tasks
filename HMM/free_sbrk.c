@@ -24,35 +24,33 @@
 extern char end, edata, etext;
 
 /* Enable if you want to replace libc malloc/free */
-#if 1
+/*
 void * malloc(size_t size)
 {
-      return HMM_malloc(size) ;
+      return malloc(size) ;
 }
 
 void free(void *ptr)
 {
-       HMM_free(ptr) ;
+       free(ptr) ;
 }
 
 void *calloc(size_t nmemb, size_t size)
 {
-	return HMM_calloc(nmemb,size) ;
+	return calloc(nmemb,size) ;
 }
 
 void *realloc(void *ptr, size_t size)
 {
-	 return HMM_realloc(ptr, size) ;
+	 return realloc(ptr, size) ;
 }
-#endif
-
+*/
 int
 main(int argc, char *argv[])
 {
     char *ptr[MAX_ALLOCS];
     int freeStep, freeMin, freeMax, blockSize, numAllocs, j;
-    void* init_pb = sbrk(0) ;
-    printf("etext = %p, edata=%p, end=%p, initial program break=%p\n", &etext, &edata, &end, (char*)init_pb);
+    printf("etext = %p, edata=%p, end=%p, initial program break=%p\n", &etext, &edata, &end, (char*)sbrk(0));
 
     if (argc < 3 || strcmp(argv[1], "--help") == 0) {
         printf("%s num-allocs block-size [step [min [max]]]\n", argv[0]);
@@ -75,6 +73,7 @@ main(int argc, char *argv[])
         printf("free-max > num-allocs\n");
         exit(1);
     }
+
     printf("Initial program break:          %10p\n", sbrk(0));
 
     printf("Allocating %d*%d bytes\n", numAllocs, blockSize);
@@ -85,16 +84,16 @@ main(int argc, char *argv[])
             exit(1);
         }
     }
-    void* pb1 = sbrk(0)  ;
-    printf("Program break is now:           %10p\n", sbrk(0));
 
+    printf("Program break is now:           %10p\n", sbrk(0));
+    void* pb1 = sbrk(0) ;
     printf("Freeing blocks from %d to %d in steps of %d\n",
                 freeMin, freeMax, freeStep);
     for (j = freeMin - 1; j < freeMax; j += freeStep)
         free(ptr[j]);
-    void* pb2 = sbrk(0) ; 
+    void* pb2 = sbrk(0) ;
     printf("After free(), program break is: %10p\n", sbrk(0));
-    printf(" program break decreased by: %ld\n", ((char*)pb1-(char*)pb2));
+     printf("difference is: %ld\n", ((unsigned char*) pb1-(unsigned char*) pb2));
     while(1);
 
     exit(EXIT_SUCCESS);

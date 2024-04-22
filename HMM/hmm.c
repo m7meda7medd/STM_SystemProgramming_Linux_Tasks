@@ -267,10 +267,15 @@ return NULL ;
  */
 
 void *malloc(size_t size)
-{  	pthread_mutex_lock(&(hmm_mutex)) ;
+{  pthread_mutex_lock(&(hmm_mutex)) ;
     if (size < MIN_ALLOCATE) {
 	size = MIN_ALLOCATE;
 	}
+    else{
+	//to allign the size to 8 bytes // for 64 bit machine 
+	size = ((size+7)/8)*8 ;
+    }
+    
     node_t *node_ptr = NULL;
 
     if (head == NULL) {

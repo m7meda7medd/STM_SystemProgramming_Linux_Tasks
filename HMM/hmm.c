@@ -476,11 +476,11 @@ void *realloc(void *old_ptr, size_t new_size)
 
 	size_t cpy_size ;
 	size_t old_size = 0  ;
-
-	if (new_size == 0){ // realloc(ptr,0)  == free(ptr)
+	if ((new_size == 0) && (old_ptr != NULL )){ // realloc(ptr,0)  == free(ptr)
 		free(old_ptr) ;
 		return NULL ;
 	}
+
 	new_ptr = malloc(new_size);	// allocate the new_size
 
 	if (old_ptr){ // realloc(NULL,size) == malloc (size)

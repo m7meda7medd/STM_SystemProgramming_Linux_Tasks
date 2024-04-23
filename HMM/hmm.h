@@ -1,5 +1,5 @@
 #ifndef HMM_H
-	#define HMM_H
+#define HMM_H
 
 #include <stdio.h>
 #include <unistd.h>
@@ -12,21 +12,18 @@
 #define SBRK_DECRMENT    (28*PAGE_SIZE)
 #define MIN_FREE_BLOCK_SIZE (sizeof(size_t)+MIN_ALLOCATE)
 
-typedef struct node { 
-size_t block_size ;
-struct node* next 	; 
-struct node* prev 	;
-}node_t ;
+typedef struct node
+{
+  size_t block_size;
+  struct node *next;
+  struct node *prev;
+} node_t;
 
 
-void* malloc(size_t size );
-void free(void* ptr) ;
-void* realloc(void* old_ptr, size_t new_size) ;
-void* calloc(size_t nmemb, size_t size) ;
-
-
-
-
+void *malloc (size_t size);
+void free (void *ptr);
+void *realloc (void *old_ptr, size_t new_size);
+void *calloc (size_t nmemb, size_t size);
 
 
 
@@ -47,5 +44,8 @@ void* calloc(size_t nmemb, size_t size) ;
 
 
 
-#endif 
 
+
+
+
+#endif

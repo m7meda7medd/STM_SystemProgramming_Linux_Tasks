@@ -6,7 +6,7 @@
 static node_t *head = NULL;
 
 
-pthread_mutex_t hmm_mutex = PTHREAD_MUTEX_INITIALIZER ; 
+pthread_mutex_t hmm_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
@@ -14,18 +14,22 @@ pthread_mutex_t hmm_mutex = PTHREAD_MUTEX_INITIALIZER ;
  *
  * @return 0 on success, -1 on failure.
  */
-int init_freelist(void)
-{	
-	head = (node_t *) sbrk(SBRK_INCREMENT);
-	if (head == (void *) -1) {
-	    return -1;
-	} else {
-	    head->block_size = SBRK_INCREMENT - sizeof(size_t);
-	    head->next = NULL;
-	    head->prev = NULL;
-	    return 0;
-	}
-} 
+int
+init_freelist (void)
+{
+  head = (node_t *) sbrk (SBRK_INCREMENT);
+  if (head == (void *) -1)
+    {
+      return -1;
+    }
+  else
+    {
+      head->block_size = SBRK_INCREMENT - sizeof (size_t);
+      head->next = NULL;
+      head->prev = NULL;
+      return 0;
+    }
+}
 
 
 /**
@@ -34,16 +38,18 @@ int init_freelist(void)
  * @param node Pointer to the node to be added.
  */
 
-void put_node_at_head(node_t * node)
+void
+put_node_at_head (node_t * node)
 {
-    node->next = head;
-	if (head != NULL){
+  node->next = head;
+  if (head != NULL)
+    {
 
-		head->prev = node;
-	}
-    node->prev = NULL;
+      head->prev = node;
+    }
+  node->prev = NULL;
 
-    head = node;
+  head = node;
 }
 
 
@@ -54,14 +60,15 @@ void put_node_at_head(node_t * node)
  * @param next_node Pointer to the next node in the list.
  */
 
-void put_node_between_two_nodes(node_t * node, node_t * next_node)
+void
+put_node_between_two_nodes (node_t * node, node_t * next_node)
 {
-	/*  Put Node between two nodes */
-    node->prev = next_node->prev;				
-    node->next = next_node;			
+  /*  Put Node between two nodes */
+  node->prev = next_node->prev;
+  node->next = next_node;
 
-    next_node->prev->next = node;				
-    next_node->prev = node;
+  next_node->prev->next = node;
+  next_node->prev = node;
 }
 
 /**
@@ -71,12 +78,13 @@ void put_node_between_two_nodes(node_t * node, node_t * next_node)
  * @param tail Pointer to the tail of the list.
  */
 
-void put_node_at_tail(node_t * node, node_t * tail)
+void
+put_node_at_tail (node_t * node, node_t * tail)
 {
-    tail->next = node;
+  tail->next = node;
 
-    node->next = NULL;
-    node->prev = tail ;
+  node->next = NULL;
+  node->prev = tail;
 
 }
 
@@ -91,60 +99,68 @@ void put_node_at_tail(node_t * node, node_t * tail)
  */
 
 
-void *split(node_t * node, size_t needed_size)
+void *
+split (node_t * node, size_t needed_size)
 {
 
-    if (node->prev == NULL) {
-	//split head      
-	node_t *new_node =(node_t*) (((unsigned char *) node +(needed_size + sizeof(size_t))));
-	new_node->block_size =
-	    node->block_size - (needed_size + sizeof(size_t));
-	node->block_size = needed_size;	// set the size of allocated block
-	
-	new_node->next = head->next;
+  if (node->prev == NULL)
+    {
+      //split head      
+      node_t *new_node =
+	(node_t
+	 *) (((unsigned char *) node + (needed_size + sizeof (size_t))));
+      new_node->block_size =
+	node->block_size - (needed_size + sizeof (size_t));
+      node->block_size = needed_size;	// set the size of allocated block
 
-	if (head->next != NULL){
-	head->next->prev = new_node ; // last bug isa 
+      new_node->next = head->next;
+
+      if (head->next != NULL)
+	{
+	  head->next->prev = new_node;	// last bug isa 
 	}
-	new_node->prev = NULL  ;
-	head = new_node;
+      new_node->prev = NULL;
+      head = new_node;
 
-	return (void *) node;
+      return (void *) node;
 
-    } 
-	else if (node->next == NULL) {
-	node_t *new_node = (node_t *) ((unsigned char *) node + needed_size + sizeof(size_t));	//shift the pointer 
-	// set the sizes of new_node and node
-	new_node->block_size =
-	    node->block_size - (needed_size + sizeof(size_t));
-	node->block_size = needed_size;	// set the size of allocated block
-	//make the next of new_node to NULL 
-	
-	
-	new_node->next = NULL;
+    }
+  else if (node->next == NULL)
+    {
+      node_t *new_node = (node_t *) ((unsigned char *) node + needed_size + sizeof (size_t));	//shift the pointer 
+      // set the sizes of new_node and node
+      new_node->block_size =
+	node->block_size - (needed_size + sizeof (size_t));
+      node->block_size = needed_size;	// set the size of allocated block
+      //make the next of new_node to NULL 
 
-	// make the prev of node points to the new node 
-	
-	node->prev->next = new_node;
-	new_node->prev = node->prev ; // edited 
 
-	return (node_t *) node;	// return the pointer of allocated 
+      new_node->next = NULL;
 
-    } else {
-	node_t *new_node = (node_t *) ((unsigned char *) node + needed_size + sizeof(size_t));	//shift the pointer 
-	// set the sizes of new_node and node
-	new_node->block_size =
-	    node->block_size - (needed_size + sizeof(size_t));
+      // make the prev of node points to the new node 
 
-	node->block_size = needed_size;	// set the size of allocated block
+      node->prev->next = new_node;
+      new_node->prev = node->prev;	// edited 
 
-	new_node->prev = node->prev ;
-	new_node->next = node->next ;	// make the next of new_node point to the next of node
-	 
-	node->prev->next = new_node ;	// make the prev of node points to the new node  
-	node->next->prev = new_node ;
+      return (node_t *) node;	// return the pointer of allocated 
 
-	return (node_t *) node;	// return the pointer of allocated 
+    }
+  else
+    {
+      node_t *new_node = (node_t *) ((unsigned char *) node + needed_size + sizeof (size_t));	//shift the pointer 
+      // set the sizes of new_node and node
+      new_node->block_size =
+	node->block_size - (needed_size + sizeof (size_t));
+
+      node->block_size = needed_size;	// set the size of allocated block
+
+      new_node->prev = node->prev;
+      new_node->next = node->next;	// make the next of new_node point to the next of node
+
+      node->prev->next = new_node;	// make the prev of node points to the new node  
+      node->next->prev = new_node;
+
+      return (node_t *) node;	// return the pointer of allocated 
     }
 }
 
@@ -157,105 +173,138 @@ void *split(node_t * node, size_t needed_size)
  * @return Pointer to the allocated node .
  */
 
-void *traverse_freelist(node_t * node, size_t needed_size)
-{	while (node != NULL){
-    if (needed_size == node->block_size) {
-	if (node->prev == NULL) {
-		
-	    head = node->next;
+void *
+traverse_freelist (node_t * node, size_t needed_size)
+{
+  while (node != NULL)
+    {
+      if (needed_size == node->block_size)
+	{
+	  if (node->prev == NULL)
+	    {
 
-		if (head != NULL){
-			
-			head->prev = NULL;
+	      head = node->next;
+
+	      if (head != NULL)
+		{
+
+		  head->prev = NULL;
 
 		}
 
-	    return (node_t *) node;
+	      return (node_t *) node;
 
-	} else if (node->next == NULL) {
-
-	    node->prev->next = NULL;
-
-	    return (node_t *) node;
-
-	} else {
-
-	    node->prev->next = node->next;
-	    node->next->prev = node->prev;
-
-	    return (node_t *) node;
-
-	}
-    } else if (node->block_size > needed_size) {
-	if ((node->block_size - needed_size) >= MIN_FREE_BLOCK_SIZE) {
-
-	    return split(node, needed_size);
-
-	} else {
-	    if (node->next == NULL)	//found that the next equals NULL 
+	    }
+	  else if (node->next == NULL)
 	    {
-		node_t *temp_node = (node_t *) sbrk(SBRK_INCREMENT);	//move the SBRK
 
-		if ((void *) temp_node == (void *) -1) {
-		    return NULL;
-		} else {
-		    // adjust the metadata of new node 
-		    temp_node->block_size =
-			SBRK_INCREMENT - sizeof(size_t);
-		    if ((node_t *) ((unsigned char *) node +
-				    (node->block_size + sizeof(size_t))) ==
-			temp_node) {
-			
-			//merge them 
+	      node->prev->next = NULL;
 
-			node->block_size +=
-			    temp_node->block_size + sizeof(size_t);
-			
-			continue ;
-		    } else {
+	      return (node_t *) node;
 
-			put_node_at_tail(temp_node,node) ; 
-			
-			node = node->next ; // see the next node 
+	    }
+	  else
+	    {
+
+	      node->prev->next = node->next;
+	      node->next->prev = node->prev;
+
+	      return (node_t *) node;
+
+	    }
+	}
+      else if (node->block_size > needed_size)
+	{
+	  if ((node->block_size - needed_size) >= MIN_FREE_BLOCK_SIZE)
+	    {
+
+	      return split (node, needed_size);
+
+	    }
+	  else
+	    {
+	      if (node->next == NULL)	//found that the next equals NULL 
+		{
+		  node_t *temp_node = (node_t *) sbrk (SBRK_INCREMENT);	//move the SBRK
+
+		  if ((void *) temp_node == (void *) -1)
+		    {
+		      return NULL;
+		    }
+		  else
+		    {
+		      // adjust the metadata of new node 
+		      temp_node->block_size =
+			SBRK_INCREMENT - sizeof (size_t);
+		      if ((node_t *) ((unsigned char *) node +
+				      (node->block_size + sizeof (size_t))) ==
+			  temp_node)
+			{
+
+			  //merge them 
+
+			  node->block_size +=
+			    temp_node->block_size + sizeof (size_t);
+
+			  continue;
+			}
+		      else
+			{
+
+			  put_node_at_tail (temp_node, node);
+
+			  node = node->next;	// see the next node 
+			}
 		    }
 		}
-	    } else {
-			
-			node = node->next ;
-	    }
+	      else
+		{
 
-	}
-    } else {
-	if (node->next == NULL)	//found that the next equals NULL 
-	{
-	    node_t *temp_node = (node_t *) sbrk(SBRK_INCREMENT);	//move the SBRK 
-	    if ((void *) temp_node == (void *) -1) {
-		return NULL;
-	    } else {
-		// adjust the metadata of new node 
-		temp_node->block_size = SBRK_INCREMENT - sizeof(size_t);
-		if ((node_t *) ((unsigned char *) node +
-				(node->block_size + sizeof(size_t))) ==
-		    temp_node) {
-		    //merge them 
-		    node->block_size +=
-			temp_node->block_size + sizeof(size_t);
-
-		} else {
-
-			put_node_at_tail(temp_node,node) ;
-
-			node = node->next ; 
+		  node = node->next;
 		}
 
-
 	    }
-	} else {
-	   node = node->next ;
+	}
+      else
+	{
+	  if (node->next == NULL)	//found that the next equals NULL 
+	    {
+	      node_t *temp_node = (node_t *) sbrk (SBRK_INCREMENT);	//move the SBRK 
+	      if ((void *) temp_node == (void *) -1)
+		{
+		  return NULL;
+		}
+	      else
+		{
+		  // adjust the metadata of new node 
+		  temp_node->block_size = SBRK_INCREMENT - sizeof (size_t);
+		  if ((node_t *) ((unsigned char *) node +
+				  (node->block_size + sizeof (size_t))) ==
+		      temp_node)
+		    {
+		      //merge them 
+		      node->block_size +=
+			temp_node->block_size + sizeof (size_t);
+
+		    }
+		  else
+		    {
+
+		      put_node_at_tail (temp_node, node);
+
+		      node = node->next;
+		    }
+
+
+		}
+	    }
+	  else
+	    {
+	      node = node->next;
+	    }
 	}
     }
-}
-return NULL ;
+  return NULL;
 }
 
 /**
@@ -266,34 +315,44 @@ return NULL ;
  * @return Pointer to the allocated memory.
  */
 
-void *malloc(size_t size)
-{  pthread_mutex_lock(&(hmm_mutex)) ;
-    if (size < MIN_ALLOCATE) {
-	size = MIN_ALLOCATE;
-	}
-    else{
-	//to allign the size to 8 bytes // for 64 bit machine 
-	size = ((size+7)/8)*8 ;
+void *
+malloc (size_t size)
+{
+  pthread_mutex_lock (&(hmm_mutex));
+  if (size < MIN_ALLOCATE)
+    {
+      size = MIN_ALLOCATE;
     }
-    
-    node_t *node_ptr = NULL;
+  else
+    {
+      //to allign the size to 8 bytes // for 64 bit machine 
+      size = ((size + 7) / 8) * 8;
+    }
 
-    if (head == NULL) {
-	if (!init_freelist()) {
-	    node_ptr = traverse_freelist(head, size);
+  node_t *node_ptr = NULL;
 
-	} else {
-	    // error can't init free_list
-		pthread_mutex_unlock(&(hmm_mutex)) ;
-	    node_ptr = NULL;
+  if (head == NULL)
+    {
+      if (!init_freelist ())
+	{
+	  node_ptr = traverse_freelist (head, size);
+
 	}
-    } else {
-	// there's a free list 
-	node_ptr = traverse_freelist(head, size);
+      else
+	{
+	  // error can't init free_list
+	  pthread_mutex_unlock (&(hmm_mutex));
+	  node_ptr = NULL;
 	}
-	pthread_mutex_unlock(&(hmm_mutex)) ;
-    return (void *) ((unsigned char *) node_ptr + (sizeof(size_t)));
-	
+    }
+  else
+    {
+      // there's a free list 
+      node_ptr = traverse_freelist (head, size);
+    }
+  pthread_mutex_unlock (&(hmm_mutex));
+  return (void *) ((unsigned char *) node_ptr + (sizeof (size_t)));
+
 }
 
 /**
@@ -303,17 +362,19 @@ void *malloc(size_t size)
  * @param right_node Pointer to the right node.
  */
 
-void merge(node_t * left_node, node_t * right_node)
-{	
-    if ((node_t *) ((unsigned char *) left_node + (left_node->block_size) +
-		    sizeof(size_t)) == (node_t *) right_node) {
+void
+merge (node_t * left_node, node_t * right_node)
+{
+  if ((node_t *) ((unsigned char *) left_node + (left_node->block_size) +
+		  sizeof (size_t)) == (node_t *) right_node)
+    {
 
-	left_node->block_size +=
-	    (right_node->block_size + (sizeof(size_t)));
+      left_node->block_size += (right_node->block_size + (sizeof (size_t)));
 
-	left_node->next = right_node->next;
-	if (right_node->next != NULL) {
-	    right_node->next->prev = left_node;
+      left_node->next = right_node->next;
+      if (right_node->next != NULL)
+	{
+	  right_node->next->prev = left_node;
 	}
 
     }
@@ -325,28 +386,35 @@ void merge(node_t * left_node, node_t * right_node)
  * @param tail Pointer to the tail node.
  */
 
-void check_on_tail_size(node_t * tail)
+void
+check_on_tail_size (node_t * tail)
 {
-    void *shifted_tail =
-	(void *) ((unsigned char *) tail + (tail->block_size) +
-		  sizeof(size_t));
-    if (tail->block_size >= (SBRK_DECRMENT - sizeof(size_t))) {
-	void *current_pb = sbrk(0);
-	if (shifted_tail == current_pb) {
-	    if (tail->prev == NULL) {
+  void *shifted_tail =
+    (void *) ((unsigned char *) tail + (tail->block_size) + sizeof (size_t));
+  if (tail->block_size >= (SBRK_DECRMENT - sizeof (size_t)))
+    {
+      void *current_pb = sbrk (0);
+      if (shifted_tail == current_pb)
+	{
+	  if (tail->prev == NULL)
+	    {
 
-			head = NULL ;
+	      head = NULL;
 
-	    }else {
-			
-			tail->prev->next = NULL;
-	    
-		}
-		signed long long decrement = (signed long long) -(tail->block_size + (sizeof(size_t))) ;
-	    void *ret_ptr = sbrk(decrement);
-	    if (ret_ptr == (void *) -1) {
-		return;
-		
+	    }
+	  else
+	    {
+
+	      tail->prev->next = NULL;
+
+	    }
+	  signed long long decrement =
+	    (signed long long) -(tail->block_size + (sizeof (size_t)));
+	  void *ret_ptr = sbrk (decrement);
+	  if (ret_ptr == (void *) -1)
+	    {
+	      return;
+
 	    }
 	}
     }
@@ -359,81 +427,102 @@ void check_on_tail_size(node_t * tail)
  * @param ptr Pointer to the memory to be freed.
  */
 
-void free(void *ptr)
-{	pthread_mutex_lock(&(hmm_mutex)) ;
-    if (ptr == NULL) {
-	pthread_mutex_unlock(&(hmm_mutex)) ;
-	return;
+void
+free (void *ptr)
+{
+  pthread_mutex_lock (&(hmm_mutex));
+  if (ptr == NULL)
+    {
+      pthread_mutex_unlock (&(hmm_mutex));
+      return;
     }
 
-    node_t *param_node =
-	(node_t *) ((unsigned char *) ptr - (sizeof(size_t)));
-    if (param_node == NULL) {
-	pthread_mutex_unlock(&(hmm_mutex)) ;
-	return;
+  node_t *param_node = (node_t *) ((unsigned char *) ptr - (sizeof (size_t)));
+  if (param_node == NULL)
+    {
+      pthread_mutex_unlock (&(hmm_mutex));
+      return;
     }
-    node_t *temp_node = head;
+  node_t *temp_node = head;
 
-    if (temp_node == NULL) {
+  if (temp_node == NULL)
+    {
 
-	put_node_at_head(param_node);
+      put_node_at_head (param_node);
 
-	if (param_node->next == NULL) {
+      if (param_node->next == NULL)
+	{
 
-	    check_on_tail_size(param_node);
+	  check_on_tail_size (param_node);
 	}
-    } else {
-	while (temp_node) {
-	    if (temp_node == param_node) {
-		break;
-	    } 
-		else if (temp_node > param_node) {
-		if (temp_node == head) {
-		    // add node to head 
-		    put_node_at_head(param_node);
-		    //merg with the next one 
-		    merge(param_node, param_node->next);
+    }
+  else
+    {
+      while (temp_node)
+	{
+	  if (temp_node == param_node)
+	    {
+	      break;
+	    }
+	  else if (temp_node > param_node)
+	    {
+	      if (temp_node == head)
+		{
+		  // add node to head 
+		  put_node_at_head (param_node);
+		  //merg with the next one 
+		  merge (param_node, param_node->next);
 
-		    if (param_node->next == NULL) { // check if merged 
-			check_on_tail_size(param_node);
+		  if (param_node->next == NULL)
+		    {		// check if merged 
+		      check_on_tail_size (param_node);
 		    }
-		    break;
-		} else {
-		    put_node_between_two_nodes(param_node, temp_node);	//add at the mid of nodes
-		    
-			merge(param_node, temp_node);	//merg with the previous and then merg with the next
-
-		    merge(param_node->prev, param_node);	//merge with the next
-			
-			if (param_node->prev->next == NULL) {
-
-			    check_on_tail_size(param_node->prev);
-			}
-		    break;
+		  break;
 		}
-	    } else {
-		if (temp_node->next == NULL) {
-		    // add at the end of free list 
-		    put_node_at_tail(param_node, temp_node);
-		    // merge the last node with the previous one
-		    merge(temp_node, param_node);
-		    // check if the size of last node 
-		    if (temp_node->next == NULL) {
-			//the temp_node and the param node merged
-			check_on_tail_size(temp_node);
+	      else
+		{
+		  put_node_between_two_nodes (param_node, temp_node);	//add at the mid of nodes
 
-		    } else {
-			//not merged 
-				check_on_tail_size(temp_node->next);
+		  merge (param_node, temp_node);	//merg with the previous and then merg with the next
+
+		  merge (param_node->prev, param_node);	//merge with the next
+
+		  if (param_node->prev->next == NULL)
+		    {
+
+		      check_on_tail_size (param_node->prev);
 		    }
-		   
+		  break;
+		}
+	    }
+	  else
+	    {
+	      if (temp_node->next == NULL)
+		{
+		  // add at the end of free list 
+		  put_node_at_tail (param_node, temp_node);
+		  // merge the last node with the previous one
+		  merge (temp_node, param_node);
+		  // check if the size of last node 
+		  if (temp_node->next == NULL)
+		    {
+		      //the temp_node and the param node merged
+		      check_on_tail_size (temp_node);
+
+		    }
+		  else
+		    {
+		      //not merged 
+		      check_on_tail_size (temp_node->next);
+		    }
+
 		}
 	    }
 
-	    temp_node = temp_node->next;
+	  temp_node = temp_node->next;
 	}
     }
-	pthread_mutex_unlock(&(hmm_mutex)) ;
+  pthread_mutex_unlock (&(hmm_mutex));
 }
 
 /**
@@ -445,20 +534,23 @@ void free(void *ptr)
  * @return Pointer to the allocated memory.
  */
 
-void *calloc(size_t nmemb, size_t size)
-{	
-    size_t total_size = (size * nmemb);
+void *
+calloc (size_t nmemb, size_t size)
+{
+  size_t total_size = (size * nmemb);
 
-    void *ptr = malloc(total_size);	// allocate
-	if (ptr == NULL) {
-		return NULL ;
-	}
-	if (total_size == 0){
-		total_size = MIN_ALLOCATE ;
-	}
-    memset(ptr, 0, total_size);
-    return ptr;
-	
+  void *ptr = malloc (total_size);	// allocate
+  if (ptr == NULL)
+    {
+      return NULL;
+    }
+  if (total_size == 0)
+    {
+      total_size = MIN_ALLOCATE;
+    }
+  memset (ptr, 0, total_size);
+  return ptr;
+
 }
 
 /**
@@ -470,27 +562,30 @@ void *calloc(size_t nmemb, size_t size)
  * @return Pointer to the reallocated memory.
  */
 
-void *realloc(void *old_ptr, size_t new_size)
+void *
+realloc (void *old_ptr, size_t new_size)
 {
-    void *new_ptr = NULL ;
+  void *new_ptr = NULL;
 
-	size_t cpy_size ;
-	size_t old_size = 0  ;
-	if ((new_size == 0) && (old_ptr != NULL )){ // realloc(ptr,0)  == free(ptr)
-		free(old_ptr) ;
-		return NULL ;
-	}
+  size_t cpy_size;
+  size_t old_size = 0;
+  if ((old_ptr == NULL))
+    {				// realloc(ptr,0)  == free(ptr)
+      new_ptr = malloc (new_size);	// realloc(NULL,size) == malloc (size)
+    }
+  else if (new_size == 0)
+    {
+      free (old_ptr);
+    }
+  else
+    {
+      new_ptr = malloc (new_size);	// allocate the new_size
+      old_size = *(size_t *) ((unsigned char *) old_ptr - sizeof (size_t));
 
-	new_ptr = malloc(new_size);	// allocate the new_size
+      cpy_size = (new_size > old_size) ? old_size : new_size;
+      memcpy (new_ptr, old_ptr, cpy_size);
+      free (old_ptr);
+    }
 
-	if (old_ptr){ // realloc(NULL,size) == malloc (size)
-    old_size =
-	*(size_t *) ((unsigned char *) old_ptr - sizeof(size_t));
-	cpy_size  =  (new_size > old_size) ? old_size : new_size  ; 
-    memcpy(new_ptr, old_ptr, cpy_size);
-	}
-	free(old_ptr);
-
-    return new_ptr;
+  return new_ptr;
 }
-

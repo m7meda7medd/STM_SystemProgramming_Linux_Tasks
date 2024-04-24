@@ -1,5 +1,5 @@
 #ifndef HMM_H
-#define HMM_H
+        #define HMM_H
 
 #include <stdio.h>
 #include <unistd.h>
@@ -11,7 +11,7 @@
 #define SBRK_INCREMENT    (32*PAGE_SIZE)
 #define SBRK_DECRMENT    (28*PAGE_SIZE)
 #define MIN_FREE_BLOCK_SIZE (sizeof(size_t)+MIN_ALLOCATE)
-
+#define SIZE_MAX 18446744073709551615UL
 typedef struct node
 {
   size_t block_size;

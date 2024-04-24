@@ -2,11 +2,10 @@
 
 #include "hmm.h"
 
-
 static node_t *head = NULL;
 
 
-pthread_mutex_t hmm_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t hmm_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 /**
@@ -323,6 +322,10 @@ malloc (size_t size)
     {
       size = MIN_ALLOCATE;
     }
+	else if (size >= SIZE_MAX){
+		pthread_mutex_unlock (&(hmm_mutex));
+		return NULL ; 
+}
   else
     {
       //to allign the size to 8 bytes // for 64 bit machine 
@@ -540,18 +543,147 @@ calloc (size_t nmemb, size_t size)
   size_t total_size = (size * nmemb);
 
   void *ptr = malloc (total_size);	// allocate
-  if (ptr == NULL)
+  	if (ptr == NULL)
     {
       return NULL;
     }
-  if (total_size == 0)
+  	else if (total_size == 0)
     {
       total_size = MIN_ALLOCATE;
-    }
-  memset (ptr, 0, total_size);
+	}
+
+	memset (ptr, 0, total_size);
   return ptr;
 
 }
+
+void realloc_extend_block(void* ptr,size_t needed_size,unsigned char* extend_split_flag){
+node_t* node_ptr = (node_t*)((unsigned char *) ptr - sizeof(size_t)) ;
+node_t* next_node_ptr  = (node_t*) ((unsigned char*) ptr + node_ptr->block_size) ;
+size_t extended_size = needed_size - node_ptr->block_size ;
+extended_size= ((extended_size+7)/8)*8 ;
+if (extended_size < 24 ){
+	extended_size = 24  ;
+}
+	if ((head == NULL) || (next_node_ptr < head)){
+		return ;
+
+	}else if (next_node_ptr == head){
+		//extend it with head
+
+		if ((head->block_size > extended_size) && ((head->block_size- extended_size) >= MIN_FREE_BLOCK_SIZE)){
+			node_t* shifted_node = (node_t*) ((unsigned char*)head + (extended_size)) ;
+			
+			node_ptr->block_size+=extended_size ;
+
+			shifted_node->prev = NULL ;
+			shifted_node->next = head->next ;
+			shifted_node->block_size = head->block_size - extended_size - sizeof(size_t);
+			if (head->next != NULL)
+			{
+			head->next->prev = shifted_node ;
+			}
+			head = shifted_node ;
+
+			*extend_split_flag = 1 ; 
+		}
+	}else{
+		node_t* temp_node = head->next ; 
+		while (temp_node){
+			if (next_node_ptr == temp_node)
+			{
+				// extend it with the next node
+		if ((temp_node->block_size > (extended_size)) && ((temp_node->block_size - extended_size) >= MIN_FREE_BLOCK_SIZE)){
+			node_t* shifted_node = (node_t*) ((unsigned char *)temp_node + extended_size) ;
+			node_ptr->block_size+=extended_size ;
+
+			shifted_node->prev = temp_node->prev ;
+			shifted_node->next = temp_node->next ;
+			shifted_node->block_size = temp_node->block_size - extended_size - sizeof(size_t);
+			temp_node->prev->next = shifted_node ;
+			if (temp_node->next != NULL)
+			{
+			temp_node->next->prev = shifted_node ;
+			}
+
+			*extend_split_flag = 1 ; 
+			break ; 			
+			}else if (temp_node > next_node_ptr){
+				
+				break ;
+			}
+		}
+			temp_node = temp_node->next ;
+	}
+}
+}
+
+void realloc_split_block(void* ptr,size_t needed_size,unsigned char* extend_split_flag){
+node_t* node_ptr = (node_t*)((unsigned char*) ptr - sizeof(size_t)) ;
+needed_size = ((needed_size+7)/8)*8 ;
+size_t splitted_size =node_ptr->block_size - needed_size ;
+
+if ((splitted_size >= MIN_FREE_BLOCK_SIZE) && (needed_size >=MIN_FREE_BLOCK_SIZE)){
+	node_t* shifted_node = (node_t*)((unsigned char*)ptr + needed_size) ;
+	shifted_node->block_size = splitted_size - sizeof(size_t) ;
+	node_ptr->block_size = needed_size ;
+if (head == NULL)
+{
+ shifted_node->next = NULL ; 
+ shifted_node->prev = NULL ;
+ head = shifted_node ; 
+}
+else 
+{ node_t* temp_node   = head  ;
+	while (temp_node){
+		if (temp_node > shifted_node){
+
+			if (temp_node == head){
+			  put_node_at_head(shifted_node) ;
+			  merge(shifted_node,temp_node) ;
+			  if (shifted_node->next == NULL)
+			  {
+				check_on_tail_size(shifted_node) ;
+			  }
+			*extend_split_flag = 1 ;
+			break ; 
+			}else{
+	
+			put_node_between_two_nodes(shifted_node,temp_node) ;
+			merge(shifted_node,temp_node) ;
+			merge(shifted_node->prev,shifted_node) ;
+			if (shifted_node->prev != NULL)
+			{
+			if (shifted_node->prev->next == NULL){
+				check_on_tail_size(shifted_node) ;
+			}
+			}
+		*extend_split_flag = 1 ;
+		break ; 
+		} 
+		}else {
+			if (temp_node->next == NULL){
+			// put it at the tail 
+			put_node_at_tail(shifted_node,temp_node) ;
+			merge(temp_node,shifted_node) ;
+			if (temp_node->next == NULL)
+			{
+				check_on_tail_size(temp_node) ;
+			}
+			else {
+				check_on_tail_size(shifted_node) ;
+			}
+			*extend_split_flag = 1 ;
+			break ; 
+			}
+		}
+		temp_node = temp_node->next ;
+	}
+
+}
+}
+}
+
 
 /**
  * @brief Reallocate memory.
@@ -566,26 +698,54 @@ void *
 realloc (void *old_ptr, size_t new_size)
 {
   void *new_ptr = NULL;
-
-  size_t cpy_size;
+  unsigned char extend_or_split = 0 ;
+  size_t cpy_size  ;
   size_t old_size = 0;
   if ((old_ptr == NULL))
     {				// realloc(ptr,0)  == free(ptr)
       new_ptr = malloc (new_size);	// realloc(NULL,size) == malloc (size)
+
     }
   else if (new_size == 0)
     {
       free (old_ptr);
     }
   else
-    {
-      new_ptr = malloc (new_size);	// allocate the new_size
-      old_size = *(size_t *) ((unsigned char *) old_ptr - sizeof (size_t));
+    { 
+	  old_size = *(size_t *) ((unsigned char *) old_ptr - sizeof (size_t));
 
-      cpy_size = (new_size > old_size) ? old_size : new_size;
-      memcpy (new_ptr, old_ptr, cpy_size);
-      free (old_ptr);
+		 if (new_size > old_size)
+		 {	
+			pthread_mutex_lock(&hmm_mutex) ;
+			realloc_extend_block(old_ptr,new_size,&extend_or_split);
+			pthread_mutex_unlock(&hmm_mutex) ;  
+			cpy_size = old_size ; 
+
+		}
+		else if (old_size > new_size){
+			 pthread_mutex_lock(&hmm_mutex) ;
+			realloc_split_block(old_ptr,new_size,&extend_or_split) ;
+			pthread_mutex_unlock(&hmm_mutex) ; 
+			cpy_size = new_size ;
+
+		}
+		else {
+			new_ptr = old_ptr ;
+			return new_ptr ; 
+		}
+
+		  if (extend_or_split){
+
+			new_ptr = old_ptr ;
+
+			}else{
+      		new_ptr = malloc (new_size);	// allocate the new_size
+			if (new_ptr != NULL)
+			{
+      		memcpy (new_ptr, old_ptr, cpy_size);
+      		free (old_ptr);
+			}
+			}
+	  } 
+	return new_ptr;
     }
-
-  return new_ptr;
-}

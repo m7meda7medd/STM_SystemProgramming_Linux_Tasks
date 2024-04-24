@@ -561,10 +561,7 @@ void realloc_extend_block(void* ptr,size_t needed_size,unsigned char* extend_spl
 node_t* node_ptr = (node_t*)((unsigned char *) ptr - sizeof(size_t)) ;
 node_t* next_node_ptr  = (node_t*) ((unsigned char*) ptr + node_ptr->block_size) ;
 size_t extended_size = needed_size - node_ptr->block_size ;
-extended_size= ((extended_size+7)/8)*8 ;
-if (extended_size < 24 ){
-	extended_size = 24  ;
-}
+	extended_size= ((extended_size+7)/8)*8 ;
 	if ((head == NULL) || (next_node_ptr < head)){
 		return ;
 
@@ -577,12 +574,12 @@ if (extended_size < 24 ){
 			node_ptr->block_size+=extended_size ;
 
 			shifted_node->prev = NULL ;
-			shifted_node->next = head->next ;
-			shifted_node->block_size = head->block_size - extended_size - sizeof(size_t);
 			if (head->next != NULL)
 			{
 			head->next->prev = shifted_node ;
 			}
+			shifted_node->next = head->next ;
+			shifted_node->block_size = head->block_size - extended_size - sizeof(size_t);
 			head = shifted_node ;
 
 			*extend_split_flag = 1 ; 
@@ -597,14 +594,15 @@ if (extended_size < 24 ){
 			node_t* shifted_node = (node_t*) ((unsigned char *)temp_node + extended_size) ;
 			node_ptr->block_size+=extended_size ;
 
-			shifted_node->prev = temp_node->prev ;
-			shifted_node->next = temp_node->next ;
-			shifted_node->block_size = temp_node->block_size - extended_size - sizeof(size_t);
 			temp_node->prev->next = shifted_node ;
+			shifted_node->prev = temp_node->prev ;
 			if (temp_node->next != NULL)
 			{
 			temp_node->next->prev = shifted_node ;
 			}
+			shifted_node->next = temp_node->next ;
+			shifted_node->block_size = temp_node->block_size - extended_size - sizeof(size_t);
+
 
 			*extend_split_flag = 1 ; 
 			break ; 			

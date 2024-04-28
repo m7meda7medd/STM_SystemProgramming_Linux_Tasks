@@ -16,11 +16,15 @@ static: $(STATIC_LIB)
 
 dynamic: $(DYNAMIC_LIB)
 
+debug: 
+	$(CC) -shared -g -o $(DYNAMIC_LIB) $(OBJ)
+
 $(STATIC_LIB): $(OBJ)
 	ar rcs $(STATIC_LIB) $(OBJ)
 
 $(DYNAMIC_LIB): $(OBJ)
 	$(CC) -shared -o $(DYNAMIC_LIB) $(OBJ)
+	
 
 $(OBJ): $(SRC)
 	$(CC) $(CFLAGS) -fPIC -c $(SRC)

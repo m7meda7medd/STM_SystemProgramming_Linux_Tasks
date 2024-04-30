@@ -17,7 +17,7 @@ static: $(STATIC_LIB)
 dynamic: $(DYNAMIC_LIB)
 
 debug: 
-	$(CC) -shared -g -o $(DYNAMIC_LIB) $(OBJ)
+	$(CC) -shared -fPIC -g $(SRC) -o $(DYNAMIC_LIB) 
 
 $(STATIC_LIB): $(OBJ)
 	ar rcs $(STATIC_LIB) $(OBJ)

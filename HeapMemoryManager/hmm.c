@@ -566,7 +566,6 @@ realloc_extend_block (void *ptr, size_t needed_size,
   node_t *next_node_ptr =
     (node_t *) ((unsigned char *) ptr + node_ptr->block_size);
   size_t extended_size = needed_size - node_ptr->block_size;
-  extended_size = ((extended_size + 7) / 8) * 8;
   if ((head == NULL) || (next_node_ptr < head))
     {
       return;
@@ -642,8 +641,8 @@ void
 realloc_split_block (void *ptr, size_t needed_size,
 		     unsigned char *extend_split_flag)
 {
+	
   node_t *node_ptr = (node_t *) ((unsigned char *) ptr - sizeof (size_t));
-  needed_size = ((needed_size + 7) / 8) * 8;
   size_t splitted_size = node_ptr->block_size - needed_size;
 
   if ((splitted_size >= MIN_FREE_BLOCK_SIZE)
@@ -737,6 +736,7 @@ realloc (void *old_ptr, size_t new_size)
   unsigned char extend_or_split = 0;
   size_t cpy_size;
   size_t old_size = 0;
+  new_size = (((new_size+7)/8)*8) ; 
   if ((old_ptr == NULL))
     {				// realloc(ptr,0)  == free(ptr)
       new_ptr = malloc (new_size);	// realloc(NULL,size) == malloc (size)
@@ -751,15 +751,16 @@ realloc (void *old_ptr, size_t new_size)
       old_size = *(size_t *) ((unsigned char *) old_ptr - sizeof (size_t));
 
       if (new_size > old_size)
-	{
+	{ 
 	  pthread_mutex_lock (&hmm_mutex);
 	  realloc_extend_block (old_ptr, new_size, &extend_or_split);
 	  pthread_mutex_unlock (&hmm_mutex);
+	  
 	  cpy_size = old_size;
 
 	}
       else if (old_size > new_size)
-	{
+	{ 
 	  pthread_mutex_lock (&hmm_mutex);
 	  realloc_split_block (old_ptr, new_size, &extend_or_split);
 	  pthread_mutex_unlock (&hmm_mutex);

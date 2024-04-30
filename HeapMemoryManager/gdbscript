@@ -1,0 +1,13 @@
+set logging file gdb.out
+set logging redirect on
+set logging overwrite on
+set logging enabled on
+
+set $x=0x5f6fb9f44000
+while ($x < 0x5f6fba7ef000)
+   p/x $x
+   p/x *(node_t*)$x
+   set $x = $x + ((node_t*)$x)->block_size + sizeof(size_t)
+end
+
+set logging enabled off

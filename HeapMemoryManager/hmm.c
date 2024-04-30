@@ -355,8 +355,12 @@ malloc (size_t size)
       node_ptr = traverse_freelist (head, size);
     }
   pthread_mutex_unlock (&(hmm_mutex));
+  if (node_ptr != NULL)
+  {
   return (void *) ((unsigned char *) node_ptr + (sizeof (size_t)));
-
+  }else{
+	return NULL ; 
+  }
 }
 
 /**
@@ -487,15 +491,28 @@ free (void *ptr)
 		{
 		  put_node_between_two_nodes (param_node, temp_node);	//add at the mid of nodes
 
-		  merge (param_node, temp_node);	//merg with the previous and then merg with the next
+		    merge (param_node, temp_node);	//merg with the previous and then merg with the next
 
-		  merge (param_node->prev, param_node);	//merge with the next
+		  	node_t* prev_node = param_node->prev;
 
-		  if (param_node->prev->next == NULL)
+		  	if (param_node->next == NULL)
 		    {
 
-		      check_on_tail_size (param_node->prev);
-		    }
+		      check_on_tail_size (param_node);
+			} 
+
+			if (prev_node->next != NULL) //program break not moved 
+			{
+		  	merge (prev_node, param_node);	//merge with the next
+			if (prev_node->next == NULL)  //if merged 
+			{
+				check_on_tail_size (prev_node); // check on the tail 
+			}
+			}else {
+
+				check_on_tail_size (prev_node); //if program break moved 
+
+			}
 		  break;
 		}
 	    }
@@ -542,7 +559,8 @@ void *
 calloc (size_t nmemb, size_t size)
 {
   size_t total_size = (size * nmemb);
-
+  total_size = (((total_size+7)/8)*8) ;
+ 
   void *ptr = malloc (total_size);	// allocate
   if (ptr == NULL)
     {
@@ -736,7 +754,7 @@ realloc (void *old_ptr, size_t new_size)
   unsigned char extend_or_split = 0;
   size_t cpy_size;
   size_t old_size = 0;
-  new_size = (((new_size+7)/8)*8) ; 
+  new_size = (((new_size+7)/8)*8) ;  //align it to 8 bytes
   if ((old_ptr == NULL))
     {				// realloc(ptr,0)  == free(ptr)
       new_ptr = malloc (new_size);	// realloc(NULL,size) == malloc (size)
@@ -764,8 +782,8 @@ realloc (void *old_ptr, size_t new_size)
 	  pthread_mutex_lock (&hmm_mutex);
 	  realloc_split_block (old_ptr, new_size, &extend_or_split);
 	  pthread_mutex_unlock (&hmm_mutex);
+	  
 	  cpy_size = new_size;
-
 	}
       else
 	{

@@ -1,18 +1,20 @@
-
-#include <unistd.h>
 #include <stdio.h>
 #include "../hmm.h"
 #include <stdlib.h>
+#include <time.h>
 #include <string.h>
- #include <time.h>
 
+#define NUM_OPERATIONS 100000
 
-#define NUM_ALLOCS 10000
-#define MAX_SIZE 200000
-#define MAX_ITERATIONS 13000
+#define MAX_SIZE (100000)
 
-
-
+enum Operation
+{
+    MALLOC,
+    CALLOC,
+    REALLOC,
+    FREE
+};
 
 
 
@@ -501,28 +503,15 @@ free (void *ptr)
 		{
 		  put_node_between_two_nodes (param_node, temp_node);	//add at the mid of nodes
 
-		    merge (param_node, temp_node);	//merg with the previous and then merg with the next
+		  merge (param_node, temp_node);	//merg with the previous and then merg with the next
 
-		  	node_t* prev_node = param_node->prev;
+		  merge (param_node->prev, param_node);	//merge with the next
 
-		  	if (param_node->next == NULL)
+		  if (param_node->prev->next == NULL)
 		    {
 
-		      check_on_tail_size (param_node);
-			} 
-
-			if (prev_node->next != NULL) //program break not moved 
-			{
-		  	merge (prev_node, param_node);	//merge with the next
-			if (prev_node->next == NULL)  //if merged 
-			{
-				check_on_tail_size (prev_node); // check on the tail 
-			}
-			}else {
-
-				check_on_tail_size (prev_node); //if program break moved 
-
-			}
+		      check_on_tail_size (param_node->prev);
+		    }
 		  break;
 		}
 	    }
@@ -819,43 +808,60 @@ realloc (void *old_ptr, size_t new_size)
   return new_ptr;
 }
 
-void random_alloc_free_test() {
-    srand((unsigned int)time(NULL));
-    
-    void* pointers[NUM_ALLOCS] = {NULL};
-    
-    for (int i = 0; i < MAX_ITERATIONS; ++i) {
-        int index = rand() % NUM_ALLOCS;
-        if (pointers[index] == NULL) {
-            // Allocate memory
-            size_t size = (size_t)(rand() % MAX_SIZE) + 1;
-            pointers[index] = malloc(size);
-            if (pointers[index] != NULL) {
-                printf("Allocated memory of size %zu at address %p\n", size, pointers[index]);
-            } else {
-                fprintf(stderr, "Allocation failed for size %zu\n", size);
-            }
-        } else {
-            // Free memory
-            printf("Freeing memory at address %p\n", pointers[index]);
-            free(pointers[index]);
-            pointers[index] = NULL;
+void *allocated_blocks[NUM_OPERATIONS];
+
+void perform_random_operations()
+{
+
+    srand(time(NULL));
+
+    for (int i = 0; i < NUM_OPERATIONS; i++)
+    {
+        enum Operation op = rand() % 4;
+        switch (op)
+        {
+        case MALLOC:
+        {
+            size_t size = rand() % MAX_SIZE + 1;
+            allocated_blocks[i] = malloc(size);
+            printf("Allocated block %p with size %zu\n", allocated_blocks[i], size);
+            break;
         }
-    }
-    
-    // Free remaining allocated memory
-    for (int i = 0; i < NUM_ALLOCS; ++i) {
-        if (pointers[i] != NULL) {
-            printf("Freeing remaining memory at address %p\n", pointers[i]);
-            free(pointers[i]);
-            pointers[i] = NULL;
+        case CALLOC:
+        {
+            size_t num = rand() % MAX_SIZE + 1;
+            size_t size = rand() % MAX_SIZE + 1;
+            allocated_blocks[i] = calloc(num, MAX_SIZE/num);
+            printf("Allocated block %p with %zu elements of size %zu\n", allocated_blocks[i], num, size);
+            break;
+        }
+        case REALLOC: {
+            if (i > 0) {
+                int idx = rand() % i;
+                size_t size = rand() % MAX_SIZE + 1;
+                allocated_blocks[idx] = realloc(allocated_blocks[idx], size);
+                printf("Reallocated block %p with size %zu\n", allocated_blocks[idx], size);
+            }
+            break;
+        }
+        case FREE:
+        {
+            if (i > 0)
+            {
+                int idx = rand() % i;
+                free(allocated_blocks[idx]);
+                allocated_blocks[idx] = NULL;
+                printf("Freed block %p\n", allocated_blocks[idx]);
+            }
+            break;
+        }
         }
     }
 }
 
-int main() {
-	printf("Starting random allocation and deallocation test...\n");
-    random_alloc_free_test();
-    printf("Test complete.\n");
+int main()
+{
+    perform_random_operations();
+
     return 0;
 }
